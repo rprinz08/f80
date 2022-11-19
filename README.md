@@ -80,9 +80,11 @@ the following I/O ports:
 |0xfe| In      |Millisecond ticks|
 |0xff| In      |CPU clock ticks|
 
+The Z80 is implemented in Verilog and the surrounding peripherals are integrated/implemented using [Migen](https://github.com/m-labs/migen).
+
 # Installation
 
-The following instructions gets you going, assuming no requirements are
+The following instructions get you going, assuming no requirements are
 installed on your system. If some of the required components are already
 available then skip the corresponding steps or packages.
 
