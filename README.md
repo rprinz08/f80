@@ -13,7 +13,7 @@ Z80 CPU documentation can be found in the [doc folder](doc).
 
 # Introduction
 
-I started my career when 8bit computers emerge. especially
+I started my career when 8bit computers emerge. Especially
 the venerable Z80 (e.g. Sinclair ZX81 or Spectrum). Late,
 I wanted to show my kids some computer basics and remembered
 how I discovered how things work on my homecomputer, years
@@ -132,6 +132,8 @@ Before building the bitstream, the monitor program must be built. It is written
 in Z80 assembler using [SJASM](https://github.com/z00m128/sjasmplus). Run
 `build.sh` in `src/firmware.sjasm` folder. The compiled monitor binary is then
 included in the bitstream in the next step.
+
+*Note: The monitor was used from the [BSX Project](http://www.breakintoprogram.co.uk/projects/homebrew-z80/z80-monitor-program-for-the-bsx) and was slightly modified for F80.*
 
 *Note: There is a monitor version available using [Small Device C Compiler](http://sdcc.sourceforge.net/) assembler in `src/firmware` folder. To include this version in the bitstream open `src/gateware/top.py` and search for `Z80 monitor binary`.*
 
