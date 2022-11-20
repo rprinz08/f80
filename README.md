@@ -13,22 +13,19 @@ Z80 CPU documentation can be found in the [doc folder](doc).
 
 # Introduction
 
-I started my career when 8bit computers emerge. Especially
-the venerable Z80 (e.g. Sinclair ZX81 or Spectrum). Late,
-I wanted to show my kids some computer basics and remembered
-how I discovered how things work on my homecomputer, years
-ago.
+I started my professional career when 8bit computers emerge. Especially
+the venerable Z80 (e.g. Sinclair ZX81 or Spectrum). Lately, I wanted to teach
+my kids some computer basics and remembered how I discovered how things work
+on my home computer, years ago.
 
-Unfortunately I no longer have any old 8 bit machines
-laying around and I also did not want to use any of the
-many available emulators. I thought it would be better they
-can touch the machine and could directly see when things
-change like blinking some LEDs.
+Unfortunately I no longer have any old 8 bit machines laying around and I also
+did not want to use any of the many available emulators. I thought it would be
+better they can touch the machine and could directly see when things change
+like blinking some LEDs.
 
-Sure nowadays this could also
-easily be done with one of the many boards like Raspberry PI or Arduinos etc.
-But their internals (e.g. like ARM CPU) are not that easy
-for kids and - I wanted to have some fun too. So I decided to
+Sure nowadays this could also easily be done with one of the many boards like
+Raspberry PI or Arduinos etc. But their internals (e.g. like an ARM CPU) are
+not that easy for kids and - I wanted to have some fun too. So I decided to
 implement a simple Z80 system on an FPGA development board.
 
 # Overview
@@ -39,8 +36,7 @@ The Digilent Arty-A100 was used as platform but any other FPGA board will work
 The Arty provides some LEDs, buttons, switches and a serial interface which are
 used by the F80 implementation
 
-In addition, a
-7-Segment display for some more output was added. Either the
+In addition, a 7-Segment display for some more output was added. Either the
 [Digilent 7-Segment PMOD](https://digilent.com/shop/pmod-ssd-seven-segment-display/)
 or, if you have some solder skills, an
 [easy to build alternative](doc/SS7-PMOD.md) can be used. The used type/PMOD can be
@@ -80,7 +76,8 @@ the following I/O ports:
 |0xfe| In      |Millisecond ticks|
 |0xff| In      |CPU clock ticks|
 
-The Z80 is implemented in Verilog and the surrounding peripherals are integrated/implemented using [Migen](https://github.com/m-labs/migen).
+The Z80 is implemented in Verilog and the surrounding peripherals are
+integrated/implemented using [Migen](https://github.com/m-labs/migen).
 
 # Installation
 
