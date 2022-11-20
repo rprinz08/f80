@@ -197,3 +197,11 @@ OK
 
 Enter **H** to show some help. The upload function is very simple and uses
 direct raw binary data. The utility `tools/upload.py` is used to simplify this.
+
+# ToDo
+
+Some ideas for next additions / improvements:
+
+* additional monitor functions
+* implement missing SDCC C-runtime functions
+* get [CP-M](https://en.wikipedia.org/wiki/CP/M) running
