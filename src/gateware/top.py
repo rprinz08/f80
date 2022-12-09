@@ -248,11 +248,11 @@ class Top(Module):
         platform.add_source_dir(vdir)
 
         # Add specific sources.
-        # platform.add_source("src/z80/tv80n.v")
-        # platform.add_source("src/z80/tv80_core.v")
-        # platform.add_source("src/z80/tv80_alu.v")
-        # platform.add_source("src/z80/tv80_mcode.v")
-        # platform.add_source("src/z80/tv80_reg.v")
+        # platform.add_source("src/gateware/z80/tv80n.v")
+        # platform.add_source("src/gateware/z80/tv80_core.v")
+        # platform.add_source("src/gateware/z80/tv80_alu.v")
+        # platform.add_source("src/gateware/z80/tv80_mcode.v")
+        # platform.add_source("src/gateware/z80/tv80_reg.v")
 
 
         # ----------------------------------------------------------------------
