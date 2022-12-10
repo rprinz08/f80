@@ -123,6 +123,13 @@ so to build the FPGA bitstreams yourself you have to install
 
 *Note: Prebuilt bitstreams for included target is provided.*
 
+*Note: Depending on your LiteX/Migen version, there might be a bug
+including external Verilog sources
+(See [Issue #207](https://github.com/m-labs/migen/issues/207) or
+[Lines ~240 in src/gateware/top.py](src/gateware/top.py#L240)).
+To fix this change line `dest = os.path.join(build_dir, path)` to `dest=path`
+in function `copy_sources` in Migen file `build/generic_platform.py`.*
+
 # Build
 
 ## Z80 monitor
