@@ -1,7 +1,7 @@
 M := $(abspath $(lastword $(MAKEFILE_LIST)))
 P := $(dir $(M))
-RUNTIME_PATH=$(P)/../../src/c-runtime/
-TOOL_PATH=$(P)/../../tools/
+RUNTIME_PATH=$(P)../../src/c-runtime/
+TOOL_PATH=$(P)../../tools/
 F=demo
 
 SER_PORT=/dev/ttyUSB1	# Arty-80 connected on serial port
@@ -20,10 +20,16 @@ LDFLAGS=-nmjwx \
 
 all: $(F).bin
 
+$(RUNTIME_PATH)ram_crt0.rel:
+	cd $(RUNTIME_PATH) && $(MAKE)
+
+$(RUNTIME_PATH)runtime.rel:
+	cd $(RUNTIME_PATH) && $(MAKE)
+
 %.rel: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(F).ihx: $(F).rel $(RUNTIME_PATH)/ram_crt0.rel $(RUNTIME_PATH)/runtime.rel
+$(F).ihx: $(F).rel $(RUNTIME_PATH)ram_crt0.rel $(RUNTIME_PATH)runtime.rel
 	$(LD) $(LDFLAGS) -i $@ $^
 
 $(F).bin: $(F).ihx
@@ -38,8 +44,9 @@ clean:
 		*~
 
 upload:
-	@$(TOOL_PATH)/upload.py \
+	@$(TOOL_PATH)upload.py \
 		--serial $(SER_PORT) \
 		--addr $(CODE_ADDR) \
 		--run \
 		"$(P)/$(F).bin"
+
