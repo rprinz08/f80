@@ -15,13 +15,14 @@ bool char_available(void) {
 }
 
 
-void putchar(char c) {
+int putchar(int c) {
     while(!char_can_be_sent());
     UART_RX_TX = c;
+    return c;
 }
 
 
-char getchar(void) {
+int getchar(void) {
     char c;
 
     while(!char_available());

@@ -30,8 +30,8 @@ __sfr __at 0xAB RGB4_B;
 
 extern bool char_can_be_sent(void);
 extern bool char_available(void);
-extern void putchar(char c);
-extern char getchar(void);
+extern int putchar(int c);
+extern int getchar(void);
 extern char* gets2(char *buf, unsigned int len);
 extern int delay(int wait_ms);
 extern void display(int value);
