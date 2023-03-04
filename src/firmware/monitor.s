@@ -97,11 +97,10 @@ RST8_Handler:
                 JP 1$
 
 Start:
-            .if eq,SKIP_MEMTEST,1
-                ;LD HL,RAM_END
-                LD HL,0x0000
+            .if SKIP_MEMTEST
+                LD HL,#0x0000
                 XOR A
-                JR 3$
+                JR Memtest_DONE
             .endif
 FN_Memtest:
                 LD HL,#RAM_START
@@ -110,7 +109,7 @@ FN_Memtest:
                 LD (HL),C
                 LD A,(HL)
                 CP C
-                JR NZ,3$
+                JR NZ,Memtest_DONE
                 INC HL
                 LD A,L
                 OR A
@@ -121,7 +120,7 @@ FN_Memtest:
                 LD A,H
                 OR A
                 JR NZ,1$
-3$:
+Memtest_DONE:
                 ; Store last byte of physical RAM in the system variables
                 LD (SYS_VARS_RAMTOP),HL
                 ; Set the stack pointer
