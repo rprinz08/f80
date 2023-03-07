@@ -378,9 +378,9 @@ Print_Hex8:
 ; Print CR/LF
 
 Print_CR:
-                LD A,0x0D
-                CALL Print_Char
                 LD A,0x0A
+                CALL Print_Char
+                LD A,0x0D
                 JR Print_Char
 
 ; Print a single character
