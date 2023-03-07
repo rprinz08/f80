@@ -202,6 +202,11 @@ OK
 Enter **H** to show some help. The upload function is very simple and uses
 direct raw binary data. The utility `tools/upload.py` is used to simplify this.
 
+# Emulator
+
+To ease development or to try F80 without a board an [emulator](./src/emulator)
+is also included.
+
 # ToDo
 
 Some ideas for next additions / improvements:
