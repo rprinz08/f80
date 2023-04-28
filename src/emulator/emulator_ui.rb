@@ -63,6 +63,7 @@ Curses.cbreak
 Curses.noecho
 Curses.stdscr.keypad = true
 Curses.raw
+Curses.nonl
 Curses.init_pair(1, Curses::COLOR_RED, Curses::COLOR_WHITE)
 Curses.init_pair(2, Curses::COLOR_GREEN, Curses::COLOR_BLACK)
 Curses.init_pair(3, Curses::COLOR_RED, Curses::COLOR_BLACK)
@@ -150,6 +151,7 @@ console.attrset Curses.color_pair(2)
 quit = false
 ms = 0
 last_ms = 0
+last_cr = false
 
 begin
     while !quit do
@@ -175,7 +177,29 @@ begin
         # Process serial output.
         while uart.transmitted_count() > 0 do
             char = uart.get_byte
-            console.addch char
+
+            # Handle CR/LF explicitely. Unfortunately, curses clears a screen
+            # line after adding a CR to window
+            # According to: https://linux.die.net/man/3/addch
+            # ... Newline does a clrtoeol(), then moves the cursor to the
+            # window left margin on the next line, scrolling the window if on
+            # the last line). ...
+            # So, if a CR is followed by not LF just output CR an char. If CR
+            # is followed by LF just output LF.
+            if last_cr then
+                if char != 10 then
+                    console.addch 13
+                end
+                console.addch char
+                last_cr = false
+            else
+                if char == 13 then
+                    last_cr = true
+                else
+                    console.addch char
+                end
+            end
+
             console.refresh
         end
 
