@@ -51,7 +51,7 @@ OptionParser.new do |opts|
 
 	opts.on("-l", "--load FILE", "Loads binary file to start of RAM") do |file|
         puts "\nRAM load file (#{file}) specified.".red
-        print "Ensure SKIP_MEMTEST is set to 1 in monitor otherwise RAM is overwritten".red
+        print "Ensure SKIP_MEMTEST is set to 1 in monitor otherwise RAM is overwritten ".red
         puts "by memory test on emulator start!".red
         ram.contents(ram.from_binary(file))
   	end

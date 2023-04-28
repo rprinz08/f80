@@ -95,7 +95,7 @@ OptionParser.new do |opts|
 	opts.on("-l", "--load FILE", "Loads binary file to start of RAM") do |file|
         console.attrset Curses.color_pair(3)
         console.addstr "\nRAM load file (#{file}) specified.\n"
-        console.addstr "Ensure SKIP_MEMTEST is set to 1 in monitor otherwise RAM is overwritten"
+        console.addstr "Ensure SKIP_MEMTEST is set to 1 in monitor otherwise RAM is overwritten "
         console.addstr "by memory test on emulator start!\n"
         console.attrset Curses.color_pair(2)
         ram.contents(rom.from_binary(file))
