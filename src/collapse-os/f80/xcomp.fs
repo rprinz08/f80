@@ -18,21 +18,21 @@ Z80A XCOMPC Z80C COREL
 \ 44 VALUE tickfactor
 
 \ Base word to check if char can be read from UART
-CODE RX<? BC PUSH,
-	BC 0 LD,
-	A UART_STATUS IN, A $01 AND, ( char available in hw RX queue? )
+CODE RX<? BC push,
+	BC 0 i) ld,
+	A UART_STATUS i) in, A $01 i) and, ( char available in hw RX queue? )
 	IFNZ,
-		A UART_DATA IN, A>HL, HL PUSH, C INC, ( read char )
+		A UART_DATA i) in, A>HL, HL push, C inc, ( read char )
 	THEN,
 	;CODE
 ALIAS RX<? (key?)
 
 \ Base word to send one char to UART
 CODE TX>
-	A UART_STATUS IN, A $10 AND, ( space in hw TX queue for char? )
+	A UART_STATUS i) in, A $10 i) and, ( space in hw TX queue for char? )
 	IFNZ,
-		A C LD, UART_DATA A OUT, ( send char )
-		BC POP,
+		A C ld, UART_DATA i) A out, ( send char )
+		BC pop,
 	THEN,
 ;CODE
 ALIAS TX> (emit)
