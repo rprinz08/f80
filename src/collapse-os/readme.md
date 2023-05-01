@@ -1,6 +1,6 @@
 # Collapse OS
 
-To use Collapse OS on f80 it must first be downloaded an prepeared. Collapse OS is provided as tar archive. The script `get.sh` is provided to automate the process:
+To use [Collapse OS](http://collapseos.org/) on f80 it must first be downloaded an prepeared. Collapse OS is provided as tar archive. The script `get.sh` is provided to automate the process:
 
 ```shell
 $ cd src/collapse-os
