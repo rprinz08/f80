@@ -59,7 +59,9 @@ $ emulator-ui.sh
 
 ### Sample usage
 
-To run the simple emulator with a monitor BIOS in ROM and the compiled `hello` example in RAM:
+To run the simple emulator with a monitor
+BIOS in ROM and the compiled `hello` example
+in RAM:
 
 ```shell
 ruby emulator.rb \
@@ -67,6 +69,15 @@ ruby emulator.rb \
       -l demo.bin
 ```
 
-After the emulator has started the monitor BIOS is shown. To start the binary in RAM enter `J8000`.
+After the emulator has started the monitor
+BIOS is shown. To start the binary in RAM
+enter `J8000`.
 
-To directly start the binary in RAM just omit loading the monitor.
+To directly start the binary in RAM just
+omit loading the monitor.
+
+*Note: Both scripts already include samples
+on how to load demo applications or Collapse
+OS. Just edit the scripts and uncomment what
+you want to run. Ensure that you have
+already built what you would run.*

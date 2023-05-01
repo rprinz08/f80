@@ -1,4 +1,4 @@
-# F80 - Simple Z80 system running on an FPGA
+# f80 - Simple Z80 system running on an FPGA
 
 This project creates a simple Z80 based computer using:
 
@@ -34,7 +34,7 @@ The Digilent Arty-A100 was used as platform but any other FPGA board will work
 (assuming all needed development tools are available).
 
 The Arty provides some LEDs, buttons, switches and a serial interface which are
-used by the F80 implementation
+used by the f80 implementation
 
 In addition, a 7-Segment display for some more output was added. Either the
 [Digilent 7-Segment PMOD](https://digilent.com/shop/pmod-ssd-seven-segment-display/)
@@ -44,7 +44,7 @@ changed in the code (see `src/gateware/top` after `Platform ports` comment).
 
 ## Hardware
 
-F80 runs at 4MHz (allthough it can run much faster - depending on the boards
+f80 runs at 4MHz (allthough it can run much faster - depending on the boards
 clock - can be changed in `top.py` - search for `cpu_clk_freq_hz`) and uses
 64kB memory organized as all RAM. The monitor starts at
 address 0x0000. Uploaded programms normally start at 0x8000.
@@ -139,7 +139,7 @@ in Z80 assembler using [SJASM](https://github.com/z00m128/sjasmplus). Run
 `build.sh` in `src/firmware.sjasm` folder. The compiled monitor binary is then
 included in the bitstream in the next step.
 
-*Note: The monitor was used from the [BSX Project](http://www.breakintoprogram.co.uk/projects/homebrew-z80/z80-monitor-program-for-the-bsx) and was slightly modified for F80.*
+*Note: The monitor was used from the [BSX Project](http://www.breakintoprogram.co.uk/projects/homebrew-z80/z80-monitor-program-for-the-bsx) and was slightly modified for f80.*
 
 *Note: There is a monitor version available using [Small Device C Compiler](http://sdcc.sourceforge.net/) assembler in `src/firmware` folder. To include this version in the bitstream open `src/gateware/top.py` and search for `Z80 monitor binary`.*
 
@@ -152,7 +152,7 @@ use `flash.py`.
 
 ## Sample/demo applications
 
-When F80 is running there are some sample/demo applications provided in
+When f80 is running there are some sample/demo applications provided in
 the project (see `samples` folder) to play with. They are written in C using the
 [Small Device C Compiler](http://sdcc.sourceforge.net/).
 For this to work the C runtime entry must first be built.
@@ -162,7 +162,7 @@ cd src/c-runtime
 make
 ```
 
-After this any sample can be compiled and uploaded to F80 using (e.g. clock
+After this any sample can be compiled and uploaded to f80 using (e.g. clock
 sample):
 
 ```shell
@@ -175,16 +175,26 @@ make
 remove `--run` parameter in the script. Also note that the serial port your
 board is connected to must be adjusted in the script.*
 
+## Operating Systems
+
+Included in this project is a port of
+[Collapse OS](http://collapseos.org/). Collapse OS is a
+[Forth](https://en.wikipedia.org/wiki/Forth_(programming_language))
+system including lots of options (e.g., SD-Card support,
+Cross Compiler). See the [readme](src/collapse-os/readme.md) for infos on how to
+install and use it on the f80.
+
+
 # Using
 
-F80 provides a simple monitor program built into the FPGA bitstream. It
+f80 provides a simple monitor program built into the FPGA bitstream. It
 allows actions like dumping and loading memory and starting programs at given
 addresses.
 
 The monitor is accessible using a serial terminal program on the host with
 settings 115200 baud, 8 data bits, no parity and 1 stop bit (115200 8 N 1).
 
-When F80 is powered up, the following output should be shown on the serial
+When f80 is powered up, the following output should be shown on the serial
 console:
 
 ```
@@ -204,7 +214,7 @@ direct raw binary data. The utility `tools/upload.py` is used to simplify this.
 
 # Emulator
 
-To ease development or to try F80 without a board an [emulator](./src/emulator)
+To ease development or to try f80 without a board an [emulator](./src/emulator)
 is also included.
 
 # ToDo
