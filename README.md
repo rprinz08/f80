@@ -175,6 +175,10 @@ make
 remove `--run` parameter in the script. Also note that the serial port your
 board is connected to must be adjusted in the script.*
 
+## BBC Basic
+
+A version of BBC Basic from R.T.Russel which is now open-source is included in this project. It is based on the BSX version frome [here](http://www.breakintoprogram.co.uk/projects/homebrew-z80/bbc-basic-for-z80-on-the-bsx) and only supports basic console I/O at the moment. So no possibility to load or store programs at the moment.
+
 ## Operating Systems
 
 Included in this project is a port of

@@ -1,0 +1,16 @@
+        MODULE SORRY
+@CLG:
+@DRAW:
+@ENVEL:
+@GCOL:
+@MODE:
+@MOVE:
+@PLOT:
+@SOUND:
+@ADVAL:
+@POINT:
+@GETIMS:
+@PUTIMS:
+            sorry
+
+        ENDMODULE

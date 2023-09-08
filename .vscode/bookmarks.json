@@ -1,0 +1,49 @@
+{
+	"files": [
+		{
+			"path": "src/bbc-basic/main.s",
+			"bookmarks": [
+				{
+					"line": 79,
+					"column": 31,
+					"label": ""
+				},
+				{
+					"line": 1212,
+					"column": 23,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/bbc-basic/patch.s",
+			"bookmarks": [
+				{
+					"line": 43,
+					"column": 9,
+					"label": ""
+				},
+				{
+					"line": 55,
+					"column": 9,
+					"label": ""
+				},
+				{
+					"line": 74,
+					"column": 1,
+					"label": ""
+				},
+				{
+					"line": 92,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 138,
+					"column": 8,
+					"label": ""
+				}
+			]
+		}
+	]
+}

@@ -30,8 +30,15 @@ function run_os {
         -r "${P}/../../src/collapse-os/os/arch/z80/f80/os.bin"
 }
 
+function run_basic {
+    $EMULATOR \
+        -l "${P}/../../src/bbc-basic/build.bin"
+}
+
 # Uncomment what you want to run ...
-run_demo
+#run_demo
 #run_clock
 #run_hello
 #run_os
+run_basic
+
