@@ -5,7 +5,7 @@ P=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 F="clock"
 
 "${P}/../../tools/upload.py" \
-	--serial /dev/ttyUSB1 \
+	--serial /dev/arty-a7-100-uart \
 	--addr 0x8000 \
 	--run \
 	"${P}/${F}.bin"
