@@ -23,6 +23,7 @@ int main(void) {
                 break;
         }
 
+        leds(seconds & 0x01);
         delay(1000);
         seconds++;
     }
