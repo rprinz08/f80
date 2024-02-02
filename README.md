@@ -157,6 +157,10 @@ the project (see `samples` folder) to play with. They are written in C using the
 [Small Device C Compiler](http://sdcc.sourceforge.net/).
 For this to work the C runtime entry must first be built.
 
+Documentation for the C compiler macro assembler can be found at:
+* https://sdcc.sourceforge.net/doc/sdccman.pdf
+* https://github.com/atsidaev/sdcc-z80-gas/tree/master/sdas/doc
+
 ```shell
 cd src/c-runtime
 make
