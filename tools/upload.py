@@ -3,6 +3,7 @@
 import argparse
 import serial
 import sys
+import time
 
 # This utility uploads compiled binaries to Arty-80 using the monitor program
 # running on it.
@@ -28,6 +29,7 @@ def upload(args):
         if(i % w) == 0:
             sys.stdout.write("#")
             sys.stdout.flush()
+        time.sleep(0.002)
 
     sys.stdout.write("]\n")
 
