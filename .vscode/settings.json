@@ -28,7 +28,11 @@
         "editorBracketMatch.border": "#f00",
 
         "editor.lineHighlightBackground": "#76047a8a",
-        "editor.renderLineHighlight": "line"
+        "editor.renderLineHighlight": "line",
+
+        "tab.activeBackground": "#207969",
+        "tab.activeBorder": "#0A84FF",
+        "tab.activeBorderTop": "#0A84FF"
     },
 
     "window.zoomLevel": 2,
@@ -67,6 +71,7 @@
         "type_traits": "c",
         "utility": "c",
         "istream": "c",
-        "ostream": "c"
+        "ostream": "c",
+        "runtime.h": "c"
     }
 }

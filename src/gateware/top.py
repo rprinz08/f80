@@ -6,11 +6,13 @@ from pprint import pprint
 
 from migen import *
 from migen.genlib.fifo import AsyncFIFO
+from migen.genlib.cdc import PulseSynchronizer
 from migen.build.generic_platform import *
 from clock import *
 from gateware.display.display import *
 from gateware.uart.uart import *
 from pwm import PWM
+from litex.soc.cores.spi import SPIMaster
 
 
 def platform_request_all(platform, name):
@@ -34,15 +36,18 @@ class Top(Module):
         # Connect platform connectors to extensions.
         # Some pins on the ChipKit connector are used for debugging purposes.
         platform.add_extension([
-            ("debug_0", 0, Pins("ck_io:ck_io0"), IOStandard("LVCMOS33")),
-            ("debug_1", 0, Pins("ck_io:ck_io1"), IOStandard("LVCMOS33")),
-            ("debug_2", 0, Pins("ck_io:ck_io2"), IOStandard("LVCMOS33")),
-            ("debug_3", 0, Pins("ck_io:ck_io3"), IOStandard("LVCMOS33")),
-            ("debug_4", 0, Pins("ck_io:ck_io4"), IOStandard("LVCMOS33")),
-            ("debug_5", 0, Pins("ck_io:ck_io5"), IOStandard("LVCMOS33")),
-            ("debug_6", 0, Pins("ck_io:ck_io8"), IOStandard("LVCMOS33")),
-            ("debug_7", 0, Pins("ck_io:ck_io9"), IOStandard("LVCMOS33")),
+            ("debug_0", 0, Pins("ck_io:ck_io0"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+            ("debug_1", 0, Pins("ck_io:ck_io1"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+            ("debug_2", 0, Pins("ck_io:ck_io2"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+            ("debug_3", 0, Pins("ck_io:ck_io3"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+            ("debug_4", 0, Pins("ck_io:ck_io4"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+            ("debug_5", 0, Pins("ck_io:ck_io5"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+            ("debug_6", 0, Pins("ck_io:ck_io6"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+            ("debug_7", 0, Pins("ck_io:ck_io7"), IOStandard("LVCMOS33"), Misc("PULLUP False")),
+        ])
 
+        # 7-Segment display PMOD
+        platform.add_extension([
             # For self built 7Segment display PMOD
             # see doc/SS7-PMOD.md for details
             # ("debug_disp", 0, Pins("""
@@ -56,12 +61,20 @@ class Top(Module):
             ("debug_disp", 0, Pins("""
                 pmoda:0 pmoda:1 pmoda:2 pmoda:3
                 pmodb:0 pmodb:1 pmodb:2 pmodb:3
-                """), IOStandard("LVCMOS33")),
+                """), IOStandard("LVCMOS33"))
+        ])
 
-            # ("sd_card", 0, Pins("""
-            #     pmodc:0 pmodc:1 pmodc:2 pmodc:3
-            #     pmodc:4 pmodc:5 pmodc:6 pmodc:7
-            #     """), IOStandard("LVCMOS33")),
+        # SDCard PMOD:
+        # - https://store.digilentinc.com/pmod-microsd-microsd-card-slot/
+        platform.add_extension([
+            ("spisdcard", 0,
+                Subsignal("clk",  Pins("pmodc:3")),
+                Subsignal("mosi", Pins("pmodc:1"), Misc("PULLUP True")),
+                Subsignal("cs_n", Pins("pmodc:0"), Misc("PULLUP True")),
+                Subsignal("miso", Pins("pmodc:2"), Misc("PULLUP True")),
+                Misc("SLEW=FAST"),
+                IOStandard("LVCMOS33"),
+            )
         ])
 
         # Request ports from platform.
@@ -89,6 +102,8 @@ class Top(Module):
 
         self.debug_disp = debug_disp = platform.request("debug_disp")
 
+        spi_sdcard_pads = platform.request("spisdcard")
+
 
         # ----------------------------------------------------------------------
         # Clocks and clock domains
@@ -108,7 +123,7 @@ class Top(Module):
             )
 
         # Create CPU clock and clock domain.
-        cpu_clk_freq_hz = 4_000_000
+        cpu_clk_freq_hz = 8_000_000
         self.submodules.cpu_clk = Clock(sys_clk_freq_hz, cpu_clk_freq_hz)
         self.clock_domains.cpu = ClockDomain(reset_less=True)
         self.comb += self.cpu.clk.eq(self.cpu_clk.clk_out)
@@ -148,10 +163,12 @@ class Top(Module):
         tick = Signal()
         ticks = Signal(8)
         ticks_ms = Signal(8)
+        #ticks_ms_read_reset = Signal(8, reset=1)
         counter_changed = Signal()
 
         uart_tx_pend = Signal(reset=0)
         uart_status = Signal(8)
+        mem_config = Signal(8)
 
         mrdws = Signal(2, reset=0)
         mwrws = Signal(2, reset=0)
@@ -160,10 +177,13 @@ class Top(Module):
         iowrws = Signal(2, reset=0)
         io_addr = Signal(8, reset=0)
 
+        sd_card_clk_divider = Signal(16, reset=0)
+
 
         # ----------------------------------------------------------------------
         # Submodules
 
+        # ----------------------------------------
         # Serial port
         self.submodules.uart = Uart(serial, clk_freq_hz=sys_clk_freq_hz, baud_rate=115200)
 
@@ -176,10 +196,23 @@ class Top(Module):
         uart_rx_fifo = ClockDomainsRenamer({"read": "cpu", "write": "sys"})(uart_rx_fifo)
         self.submodules.uart_rx_fifo = uart_rx_fifo
 
+        # ----------------------------------------
         # 7segment LED display
         self.submodules.disp = disp = Disp7(REFRESH_CLK_HZ=500, NUM_DIGITS=2,
                                             BCD_MODE=False, FLIP=True)
 
+        # SPI SD-Card ---------------------------------------------------------
+        self.submodules.spi_sdcard = spi_sdcard = SPIMaster(
+            pads         = spi_sdcard_pads,
+            data_width   = 8,
+            sys_clk_freq = sys_clk_freq_hz,
+            spi_clk_freq = 400e3,
+            with_csr     = False,
+            mode         = "raw"
+        )
+        self.submodules.sd_start = sd_start = PulseSynchronizer("cpu", "sys")
+
+        # ----------------------------------------
         # One PWM per RGB LED color (4 RGB LEDs * a 3 colors each)
         period = 65280   # 652.8 us
         width = period // 2  # 326.4 us
@@ -190,23 +223,33 @@ class Top(Module):
                 setattr(self.submodules, pwm, PWM(default_enable=0,
                     default_width=width, default_period=period))
 
-        # Initialize CPU memory from file containing Z80 monitor binary.
-        cpu_ram_init_file = path.join(path.abspath(os.path.dirname(__file__)),
-            "../firmware.sjasm/monitor.bin")
-        with open(cpu_ram_init_file, "rb") as f:
-            cpu_ram_init = f.read()
+        # ----------------------------------------
 
-        #cpu_ram_size = os.stat(cpu_ram_init_file).st_size
-        #cpu_ram_size = len(cpu_ram_init)
-        cpu_ram_size = 65535
+        # Bank0: 0x0000 - 0x7fff ROM
+        #        0x8000 - 0xffff RAM
+        # Bank1: 0x0000 - 0xffff RAM
 
-        self.specials.mem = Memory(8, cpu_ram_size, init=cpu_ram_init)
-        self.specials.mr = self.mem.get_port(
+        # Memory bank 0 (32k ROM, 32k RAM)
+        # Initialize ROM memory from file containing Z80 monitor binary.
+        rom_init_file = path.join(path.abspath(os.path.dirname(__file__)),
+            "..", "firmware", "c", "monitor.bin")
+        with open(rom_init_file, "rb") as f:
+            rom_init = f.read()
+        rom_size = 0x7fff
+        self.specials.rom = Memory(8, rom_size, init=rom_init)
+        self.specials.rom_r = self.rom.get_port(
             clock_domain="sys")
-        self.specials.mw = self.mem.get_port(
+
+        # Sert-up memory bank 1 (all RAM)
+        ram_size = 0xffff
+        self.specials.ram = Memory(8, ram_size)
+        self.specials.ram_r = self.ram.get_port(
+            clock_domain="sys")
+        self.specials.ram_w = self.ram.get_port(
             write_capable=True,
             clock_domain="sys")
 
+        # ----------------------------------------
         # Z80 CPU instance and external sources.
         self.specials += Instance("tv80n",
             p_Mode=0,
@@ -264,14 +307,29 @@ class Top(Module):
 
         # Place some signals on debug connector for inspection.
         self.comb += [
-            debug_0.eq(sys_hw_reset_n),
-            debug_1.eq(buttons[0]),
-            debug_2.eq(cpu_reset_n),
-            debug_3.eq(sys_reset_n),
-            debug_4.eq(0),
-            debug_5.eq(0),
-            debug_6.eq(0),
-            debug_7.eq(ClockSignal("ms")),
+            debug_0.eq(spi_sdcard.cs),
+            debug_1.eq(spi_sdcard.start),
+            debug_2.eq(spi_sdcard.done),
+
+            #debug_3.eq(spi_sdcard.irq),
+            debug_3.eq(leds[0]),
+
+            debug_4.eq(sd_start.i),
+            debug_5.eq(sd_start.o),
+
+            # debug_4.eq(spi_sdcard.pads.clk),
+            # debug_5.eq(spi_sdcard.pads.cs_n[0]),
+            # debug_6.eq(spi_sdcard.pads.mosi),
+            # debug_7.eq(spi_sdcard.pads.miso),
+
+            # debug_0.eq(sys_hw_reset_n),
+            # debug_1.eq(buttons[0]),
+            # debug_2.eq(cpu_reset_n),
+            # debug_3.eq(sys_reset_n),
+            # debug_4.eq(0),
+            # debug_5.eq(0),
+            # debug_6.eq(0),
+            # debug_7.eq(ClockSignal("ms")),
         ]
 
         self.comb += [
@@ -356,7 +414,13 @@ class Top(Module):
                 )
             ).Else(
                 self.uart.rx_ack.eq(0),
-            )
+            ),
+
+            # SD Card
+            spi_sdcard.start.eq(0),
+            If(sd_start.o & spi_sdcard.done,
+                spi_sdcard.start.eq(1)
+            ),
         ]
 
 
@@ -364,7 +428,7 @@ class Top(Module):
         # Millisecond ticker clock domain
 
         self.sync.ms += [
-            ticks_ms.eq(ticks_ms + 1)
+            ticks_ms.eq(ticks_ms + 1),
         ]
 
 
@@ -381,6 +445,7 @@ class Top(Module):
         # CPU Reset.
         self.sync.cpu += [
             If(~cpu_reset_n,
+                mem_config.eq(0),
                 disp.dispval.eq(0),
 
                 self.leds[0].eq(0),
@@ -388,7 +453,12 @@ class Top(Module):
                 self.leds[2].eq(0),
                 self.leds[3].eq(0),
 
-                reset_rgb_leds
+                reset_rgb_leds,
+
+                spi_sdcard.cs.eq(0),
+                spi_sdcard.cs_mode.eq(0),
+                spi_sdcard.length.eq(0),
+                spi_sdcard.mosi.eq(0),
             )
         ]
 
@@ -402,6 +472,18 @@ class Top(Module):
             ),
         ]
 
+        # Millisecond ticker, reset on read.
+        ticks_ms_read_reset = Signal()
+        ticks_ms_latch = Signal()
+        self.sync.cpu += [
+            If(ticks_ms_read_reset != 0xff,
+                If(ticks_ms[0] == ticks_ms_latch,
+                    ticks_ms_read_reset.eq(ticks_ms_read_reset + 1),
+                    ticks_ms_latch.eq(~ticks_ms_latch)
+                )
+            )
+        ]
+
         # Memory access.
         self.sync.cpu += [
 
@@ -410,10 +492,26 @@ class Top(Module):
                 If(mrdws == 0,
                     wait_n.eq(0),
                 ).Elif(mrdws == 1,
-                    self.mr.adr.eq(addr),
+                    If(addr > 0x7fff,
+                        self.ram_r.adr.eq(addr)
+                    ).Else(
+                        If(mem_config[0] == 0,
+                            self.rom_r.adr.eq(addr)
+                        ).Else(
+                            self.ram_r.adr.eq(addr)
+                        )
+                    )
                 ).Elif(mrdws == 2,
                     wait_n.eq(1),
-                    cpu_din.eq(self.mr.dat_r),
+                    If(addr > 0x7fff,
+                        cpu_din.eq(self.ram_r.dat_r),
+                    ).Else(
+                        If(mem_config[0] == 0,
+                            cpu_din.eq(self.rom_r.dat_r),
+                        ).Else(
+                            cpu_din.eq(self.ram_r.dat_r),
+                        )
+                    )
                 ),
                 mrdws.eq(mrdws + 1),
             ).Else(
@@ -425,12 +523,17 @@ class Top(Module):
                 If(mwrws == 0,
                     wait_n.eq(0),
                 ).Elif(mwrws == 1,
-                    self.mw.adr.eq(addr),
-                    self.mw.dat_w.eq(cpu_dout),
-                    self.mw.we.eq(1),
+                    # Ignore writes to ROM
+                    If(addr[15] | mem_config[0],
+                        self.ram_w.adr.eq(addr),
+                        self.ram_w.dat_w.eq(cpu_dout),
+                        self.ram_w.we.eq(1)
+                    )
                 ).Elif(mwrws == 2,
                     wait_n.eq(1),
-                    self.mw.we.eq(0),
+                    If(addr[15] | mem_config[0],
+                        self.ram_w.we.eq(0)
+                    )
                 ),
                 mwrws.eq(mwrws + 1),
             ).Else(
@@ -440,6 +543,7 @@ class Top(Module):
 
         # I/O access.
         self.sync.cpu += [
+            sd_start.i.eq(0),
 
             # I/O read
             If(io_re,
@@ -468,6 +572,15 @@ class Top(Module):
                         0x01: [
                             cpu_din.eq(uart_status),
                         ],
+                        # I/O address 0x02, memory configuration
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                        RESERVED                       |  BANK |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # BANK          Memory bank 0 (ROM/RAM) or 1 (all RAM)
+                        0x02: [
+                            cpu_din.eq(mem_config),
+                        ],
                         # I/O address 0xF0, buttons
                         #     7       6       5       4       3       2       1       0
                         # +-------+-------+-------+-------+-------+-------+-------+-------+
@@ -495,6 +608,38 @@ class Top(Module):
                                 switches[3],
                                 0, 0, 0, 0
                             ))
+                        ],
+                        # SD-Card status
+                        # I/O address 0xF2
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                    RESERVED                   |  Mode |  Done |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # Done: SPI Xfer Done (when read as 1)
+                        # Mode:
+                        #       0: Raw: MOSI transfers aligned on core's data-width.
+                        #       1: Aligned: MOSI transfers aligned on transfers' length.
+                        0xf2: [
+                            cpu_din.eq(Cat(
+                                spi_sdcard.done,
+                                {"raw": 0b0, "aligned": 0b1}[spi_sdcard.mode],
+                                0, 0, 0, 0, 0, 0
+                            ))
+                        ],
+                        # SD-Card MISO
+                        # I/O address 0xF3
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                             MISO                              |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # SPI MISO data (MSB-first de-serialization)
+                        0xf3: [
+                            cpu_din.eq(spi_sdcard.miso)
+                        ],
+                        # I/O address 0xFD, millisecond ticks counter, reset on read.
+                        0xfd: [
+                            cpu_din.eq(ticks_ms_read_reset),
+                            ticks_ms_read_reset.eq(0),
                         ],
                         # I/O address 0xFE, millisecond ticks counter
                         0xfe: [
@@ -532,7 +677,11 @@ class Top(Module):
                                 iowrws.eq(2)
                             )
                         ],
-
+                        # I/O address 0x02, memory configuration
+                        0x02: [
+                            mem_config.eq(cpu_dout),
+                            wait_n.eq(1),
+                        ],
                         # I/O address 0xA0-0xA2, RGB LED 1
                         0xa0: [ # red PWM
                             self.pwm_rgb1_r.width.eq(cpu_dout << 8),
@@ -604,6 +753,77 @@ class Top(Module):
                             leds[1].eq(cpu_dout[1]),
                             leds[2].eq(cpu_dout[2]),
                             leds[3].eq(cpu_dout[3]),
+                            wait_n.eq(1),
+                        ],
+                        # SD-Card Control
+                        # I/O address 0xF2
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                        Reserved                       | Start |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # Start: SPI Xfer Start (Write 1 to start Xfer).
+                        0xf2: [
+                            sd_start.i.eq(cpu_dout[0]),
+                            wait_n.eq(1),
+                        ],
+                        # SD-Card MOSI
+                        # I/O address 0xF3
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                             MOSI                              |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # MOSI: SPI MOSI data (MSB-first serialization).
+                        0xf3: [
+                            spi_sdcard.mosi.eq(cpu_dout),
+                            wait_n.eq(1),
+                        ],
+                        # SD-Card Chip Select
+                        # I/O address 0xF4
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |  Mode |                           CS                          |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # CS:
+                        #   "0b0..001" Chip 0 selected for SPI Xfer.
+                        #   "0b1..000" Chip N selected for SPI Xfer.
+                        # Mode:
+                        #   "0b0", Normal operation (CS handled by Core).
+                        #   "0b1", Manual operation (CS handled by User, direct
+                        #          recopy of "sel"), useful for Bulk transfers.
+                        0xf4: [
+                            spi_sdcard.cs.eq(cpu_dout[0]),
+                            #spi_sdcard.cs_mode.eq(cpu_dout[7]),
+                            wait_n.eq(1),
+                        ],
+                        # SD-Card Clock Divider low
+                        # I/O address 0xF5
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                          CLK_DIV_LOW                          |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        0xf5: [
+                            sd_card_clk_divider[0:8].eq(cpu_dout),
+                            wait_n.eq(1),
+                        ],
+                        # SD-Card Clock Divider high
+                        # I/O address 0xF6
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                          CLK_DIV_HIGH                         |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        0xf6: [
+                            sd_card_clk_divider[8:16].eq(cpu_dout),
+                            spi_sdcard.clk_divider.eq(sd_card_clk_divider),
+                            wait_n.eq(1),
+                        ],
+                        # SD-Card TX length
+                        # I/O address 0xF7
+                        #     7       6       5       4       3       2       1       0
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        # |                            LENGTH                             |
+                        # +-------+-------+-------+-------+-------+-------+-------+-------+
+                        0xf7: [
+                            spi_sdcard.length.eq(cpu_dout),
                             wait_n.eq(1),
                         ],
                         "default": [

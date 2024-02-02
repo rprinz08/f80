@@ -44,6 +44,66 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "src/gateware/top.py",
+			"bookmarks": [
+				{
+					"line": 430,
+					"column": 17,
+					"label": ""
+				},
+				{
+					"line": 475,
+					"column": 27,
+					"label": ""
+				},
+				{
+					"line": 639,
+					"column": 26,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/firmware/monitor.s",
+			"bookmarks": [
+				{
+					"line": 148,
+					"column": 4,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/gateware/work/lifo.py",
+			"bookmarks": [
+				{
+					"line": 307,
+					"column": 30,
+					"label": ""
+				},
+				{
+					"line": 334,
+					"column": 36,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/firmware/sdcard.s",
+			"bookmarks": [
+				{
+					"line": 230,
+					"column": 19,
+					"label": ""
+				},
+				{
+					"line": 432,
+					"column": 28,
+					"label": ""
+				}
+			]
 		}
 	]
 }

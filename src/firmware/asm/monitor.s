@@ -1,4 +1,6 @@
                 .module monitor
+                .globl  delay
+                .globl  LEDS_PORT, DISP7_PORT
                 .area    _MAIN (ABS)
 
 ROM_START       .equ    0x0000
@@ -26,7 +28,6 @@ SKIP_MEMTEST    .equ    1
                 .org 0x8200
             .else
                 .org #ROM_START
-                ;.org 0x0000
 ; RST 00
                 DI
                 JP Start
@@ -35,9 +36,6 @@ SKIP_MEMTEST    .equ    1
 ; RST 08
                 .org    0x0008
                 JP      RST8_Handler
-                ;jp ROM_START
-                ;reti
-                ;.sd 8
 
 ; RST 10
                 ;.org    0x10
@@ -75,26 +73,42 @@ SKIP_MEMTEST    .equ    1
 ; Start
 
 RST8_Handler:
-                ; Check for putchar function (0x01)
-                CP #0x01
-                JR NZ,2$
+                ; 0x00 main function return
+                CP #0x00
+                JR NZ,1$
 
-                ;PUSH AF
+                PUSH AF
+                PUSH HL
+                LD HL,#MSG_MAIN_RET
+                CALL Print_String
+                POP HL
+                POP AF
+                CALL Print_Hex16
+                CALL Print_CR
+
+                JP RST8_Handler_Exit
+
+1$:
+                ; 0x01 put character
+                CP #0x01
+                JR NZ,RST8_Handler_NotSup
+
                 LD A,L
                 OUT (PORT_STM_IO),A
-                ;POP AF
-1$:
-                EI
-                RET
+                JP RST8_Handler_Exit
 
-2$:
+RST8_Handler_NotSup:
+                ; Unsupported function.
                 PUSH AF
                 LD HL,#MSG_RST8
                 CALL Print_String
                 POP AF
                 CALL Print_Hex8
                 CALL Print_CR
-                JP 1$
+
+RST8_Handler_Exit:
+                EI
+                RET
 
 Start:
             .if SKIP_MEMTEST
@@ -190,10 +204,18 @@ Input_Loop:
                 JP Z,FN_Memory_Dump
                 CP #'L'
                 JP Z,FN_Memory_Load
+                CP #'O'
+                JP Z,FN_Port_out
+                CP #'I'
+                JP Z,FN_Port_in
                 CP #'J'
                 JP Z,FN_Jump
                 CP #'T'
                 JP Z,FN_Memtest
+                CP #'V'
+                JP Z,FN_Show_ID
+                CP #'Z'
+                JP Z,wip
                 ; Not jumped to anything, so pop the return address off the stack
                 POP HL
 
@@ -239,10 +261,6 @@ FN_Memory_Load:
                 ;LD HL,DE
                 ld h,d
                 ld l,e
-                ;IN A,(PORT_STM_IO): LD L,A
-                ;IN A,(PORT_STM_IO): LD H,A
-                ;IN A,(PORT_STM_IO): LD C,A
-                ;IN A,(PORT_STM_IO): LD B,A
 1$:
                 ; Check if a byte could be read
                 IN A,(PORT_STM_IO_CTL)
@@ -267,6 +285,28 @@ FN_Memory_Load:
 2$:             LD HL,#MSG_ERROR
                 JP Print_String
 
+FN_Port_out:
+                LD HL,#SYS_VARS_INPUT+1
+                CALL Parse_Hex16
+                LD A,(HL)
+                CP #','
+                JR NZ,1$
+                INC HL
+                PUSH DE
+                CALL Parse_Hex16
+                POP BC
+                OUT (C),E
+                RET
+1$:             LD HL,#MSG_ERROR
+                JP Print_String
+
+FN_Port_in:
+                LD HL,#SYS_VARS_INPUT+1
+                CALL Parse_Hex16
+                LD C,E
+                IN A,(C)
+                JP Print_Hex8
+
 FN_Memory_Dump:
                 LD HL,#SYS_VARS_INPUT+1
                 CALL Parse_Hex16
@@ -284,6 +324,8 @@ FN_Memory_Dump:
                 JP Print_String
 
 FN_Help:
+                LD HL,#MSG_HELP0
+                CALL Print_String
                 LD HL,#MSG_HELP1
                 CALL Print_String
                 LD HL,#MSG_HELP2
@@ -292,13 +334,25 @@ FN_Help:
                 CALL Print_String
                 LD HL,#MSG_HELP4
                 CALL Print_String
+                LD HL,#MSG_HELP5
+                CALL Print_String
+                LD HL,#MSG_HELP6
+                CALL Print_String
+                LD HL,#MSG_HELP7
+                CALL Print_String
+                LD HL,#MSG_HELP8
+                CALL Print_String
                 LD HL,#MSG_HELPx
+                JP Print_String
+
+FN_Show_ID:
+                LD HL,#MSG_ID
                 JP Print_String
 
 ; Print a zero terminated string to the terminal port
 ; HL: Address of the string
 
-Print_String:
+Print_String::
                 LD A,(HL)
                 OR A
                 RET Z
@@ -337,8 +391,7 @@ Memory_Dump:
 
 Parse_Hex16:
                 LD DE,#0    ; Clear the output
-1$:
-                LD A,(HL)   ; Get the nibble
+1$:             LD A,(HL)   ; Get the nibble
                 SUB #'0'     ; Normalise to 0
                 RET C       ; Return if < ASCII '0'
                 CP #10      ; Check if >= 10
@@ -376,7 +429,7 @@ Print_Hex16:
 ; Print an 8-bit HEX number
 ; A: Number to print
 
-Print_Hex8:
+Print_Hex8::
                 LD C,A
                 RRA
                 RRA
@@ -394,7 +447,7 @@ Print_Hex8:
 
 ; Print CR/LF
 
-Print_CR:
+Print_CR::
                 LD A,#0x0D
                 CALL Print_Char
                 LD A,#0x0A
@@ -419,16 +472,57 @@ Print_Char:
                 OUT (PORT_STM_IO),A
                 RET
 
+wip:
+                LD HL,#WIP_DELAY
+                CALL Print_String
+
+                ;LD A,#1
+                ;;OUT (LEDS_PORT),A
+                ;OUT (0xf1),A
+
+                LD A,#10
+again$:
+                ;OUT (DISP7_PORT),A
+                OUT (0xf0),A
+
+                PUSH AF
+
+                AND A, #1
+                OUT (0xf1),A
+
+                LD HL,#1000
+                CALL delay
+
+                POP AF
+                DEC A
+                OR A
+                JR NZ, again$
+
+                LD A,#0
+                ;OUT (LEDS_PORT),A
+                OUT (0xf1),A
+
+                RET
+
 ; Messages
 
 MSG_STARTUP:    .asciz "\n\rBSX Version 0.2\n\r"
 MSG_HELP0:      .asciz "H                 This help screen\n\r"
 MSG_HELP1:      .asciz "D<addr>,<length>  Dump <length> memory bytes starting at <addr>\n\r"
 MSG_HELP2:      .asciz "L<addr>,<length>  Load <length> memory bytes starting at <addr>\n\r"
-MSG_HELP3:      .asciz "J<addr>           Start execution jumping to memory address <addr>\n\r"
-MSG_HELP4:      .asciz "T                 Memory test RAM\n\r\n\r"
+MSG_HELP3:      .asciz "O<port>,<value>   Write 8bit <value> to 8bit <port>\n\r"
+MSG_HELP4:      .asciz "I<port>           Raed 8bit value from 8bit <port>\n\r"
+MSG_HELP5:      .asciz "J<addr>           Start execution jumping to memory address <addr>\n\r"
+MSG_HELP6:      .asciz "T                 Memory test RAM\n\r"
+MSG_HELP7:      .asciz "V                 Show version and board ID\n\r"
+MSG_HELP8:      .asciz "Z                 WIP\n\r\n\r"
 MSG_HELPx:      .asciz "All <arguments> in uppercase hex (e.g. D8000,0100)\n\r"
-MSG_READY:      .asciz "Ready\n\r"
+MSG_READY:      .asciz "OK\n\r"
+MSG_ERROR:      .asciz "Error\n\r"
 MSG_BADRAM:     .asciz "Mem Fault\n\r"
 MSG_RST8:       .asciz "RST8 A="
-MSG_ERROR:      .asciz "Error\n\r"
+MSG_MAIN_RET:   .asciz "Main returns HL="
+MSG_ID:         .asciz "Arty-Z80, BSX V:0.2.0 sdas\n\r"
+WIP_DELAY:      .asciz "Test delay\r\n"
+
+MAIN_END::
