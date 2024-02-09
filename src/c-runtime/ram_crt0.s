@@ -34,6 +34,10 @@ __clock::
 	ret
 
 _exit::
+	; Ensure that ROM is enabled after program exists.
+	ld		a,#0
+	out		(0x02), a
+	; Call exit handler in ROM.
 	ld		a,#0
 	rst		0x08
 	jp		0x0000
