@@ -4,7 +4,7 @@ RUNTIME_PATH=$(P)../../src/c-runtime/
 TOOL_PATH=$(P)../../tools/
 F=clock
 
-SER_PORT=/dev/ttyUSB1	# Arty-80 connected on serial port
+SER_PORT=/dev/arty-a7-100-uart	# Arty-80 connected on serial port
 CODE_ADDR=0x8000		# crt0 starts here
 MAIN_ADDR=0x8040		# C main function starts here
 DATA_ADDR=0xDF00		# C data area starts here
