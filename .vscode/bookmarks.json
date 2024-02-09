@@ -104,6 +104,21 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "src/cpm/bios-f80.asm",
+			"bookmarks": [
+				{
+					"line": 307,
+					"column": 35,
+					"label": ""
+				},
+				{
+					"line": 373,
+					"column": 37,
+					"label": ""
+				}
+			]
 		}
 	]
 }

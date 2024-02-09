@@ -29,6 +29,8 @@ void show_menu(void) {
     printf("i                 (Re)initialized SD-Card" CRLF);
     printf("r<block>,<addr>   Load <block> from SD-Card into RAM @ <addr>" CRLF);
     printf("w<addr>,<block>   Write 512 byte from RAM @ <addr> to SD-Card <block>" CRLF);
+    printf("B                 Boot. Read block 0 from SD-Card to RAM @ 0x8000," CRLF);
+    printf("                  switch to all RAM memory config and jump to RAM @ 0x8000" CRLF);
     printf("--- Misc ---" CRLF);
     printf("T                 Memory test RAM" CRLF);
     printf("H                 This help screen" CRLF);
@@ -125,7 +127,7 @@ void fn_load(uint8_t* buffer) {
         printf(MSG_ERR);
 }
 
-uint8_t _jump_helper(uint16_t addr) __naked {
+void _jump_helper(uint16_t addr) __naked {
     addr;   // Get rid of unused variable compiler warning.
     __asm
     ; Bypass the return address of the function.
@@ -203,6 +205,35 @@ void sd_write_block(uint8_t* buffer) {
     }
 }
 
+void sd_boot() {
+    uint16_t addr = 0x8000;
+    uint8_t* ptr = (uint8_t*)addr;
+
+    // Read first block (512 bytes) from SD-Card to RAM @ address 0x8000
+    uint8_t ok = spisdcard_read(ptr, 0, 1);
+    if(!ok) {
+        sd_status_info("SD-Card read", ok);
+        printf("Boot aborted" CRLF);
+        return;
+    }
+
+    // Write change memory to all RAM code to end of RAM and a jump to RAM @ 0x8000
+    addr = 0xfff0;
+    ptr = (uint8_t*)addr;
+    uint8_t code[] = {
+            0xe3, 0x01,         // LD A, #0x01
+            0xd3, 0x02,         // OUT (0x02), A
+            0xc3, 0x00, 0x80    // JP 0x8000
+        };
+
+    for(int i=0; i<sizeof(code); i++) {
+        *(ptr+i) = code[i];
+    }
+
+    // Jump to code at end of RAM.
+    _jump_helper(addr);
+}
+
 int main(void) {
     uint8_t buffer[600];
 
@@ -226,8 +257,8 @@ int main(void) {
             case 'L':
                 fn_load(args);
                 break;
-            case 'r':
-                sd_load_block(args);
+            case 'J':
+                fn_jump(args);
                 break;
             case 'O':
                 fn_io_out(args);
@@ -238,20 +269,23 @@ int main(void) {
             case 'i':
                 sd_init();
                 break;
-            case 'J':
-                fn_jump(args);
-                break;
-            case 'T':
-                fn_memtest();
-                break;
-            case 'V':
-                show_id();
+            case 'r':
+                sd_load_block(args);
                 break;
             case 'w':
                 sd_write_block(args);
                 break;
+            case 'B':
+                sd_boot();
+                break;
+            case 'T':
+                fn_memtest();
+                break;
             case 'H':
                 show_menu();
+                break;
+            case 'V':
+                show_id();
                 break;
             default:
                 break;
