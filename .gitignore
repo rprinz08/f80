@@ -3,6 +3,7 @@
 .vscode/.ropeproject/objectdb
 working/
 **/tmp/
+**/work/
 **/old
 **/*.old
 **/__pycache__
