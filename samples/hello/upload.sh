@@ -7,5 +7,5 @@ F="hello"
 "${P}/../../tools/upload.py" \
 	--serial /dev/arty-a7-100-uart \
 	--addr 0x8000 \
-	--run \
 	"${P}/${F}.bin"
+

@@ -9,9 +9,9 @@
 
 #define SYS_CLK_FREQ_HZ             100e6
 
-//-----------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Hardware I/O registers.
-//-----------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 __sfr __at 0x00 UART_RX_TX;
 __sfr __at 0x01 UART_STATUS;
@@ -43,9 +43,9 @@ __sfr __at 0xAB RGB4_B;
 // Uncomment to use bios HW access functions.
 #define USE_BIOS_RST_FUNCTIONS
 
-//-----------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Helpers
-//-----------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #define max(x, y)       (((x) > (y)) ? (x) : (y))
 #define min(x, y)       (((x) < (y)) ? (x) : (y))
@@ -59,9 +59,9 @@ __sfr __at 0xAB RGB4_B;
                          ( (uint32_t)(x) << 24))
 
 
-//-----------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Function prototypes
-//-----------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 extern bool char_can_be_sent(void);
 extern bool char_available(void);
@@ -74,10 +74,13 @@ extern void leds(int value);
 extern void rgb_led(int led, int r, int g, int b);
 extern int get_buttons(void);
 extern int get_switches(void);
+extern int isspace(char c);
+extern uint8_t chksum8(const uint8_t *buff, int len);
 
 extern void dump_hex(const void* data, uint32_t size,
     bool show_addr, uint32_t start_addr);
 
 extern uint16_t parse_hex_str(uint8_t* hex, uint8_t** ptr);
+extern uint16_t parse_int_str(uint8_t* dec, uint8_t** ptr);
 
 #endif

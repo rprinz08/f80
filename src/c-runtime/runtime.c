@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include "runtime.h"
 
@@ -24,6 +24,7 @@ bool char_can_be_sent(void) __naked {
     __endasm;
 }
 
+
 bool char_available(void) __naked {
     __asm
 
@@ -40,6 +41,7 @@ bool char_available(void) __naked {
 
     __endasm;
 }
+
 
 int putchar(int c) __naked {
     c;
@@ -63,6 +65,7 @@ int putchar(int c) __naked {
     __endasm;
 }
 
+
 int getchar(void) __naked {
     __asm
 
@@ -79,15 +82,18 @@ bool char_can_be_sent(void) {
     return (UART_STATUS & 0x10) == 0x10;
 }
 
+
 bool char_available(void) {
     return (UART_STATUS & 0x01) == 0x01;
 }
+
 
 int putchar(int c) {
     while(!char_can_be_sent());
     UART_RX_TX = c;
     return c;
 }
+
 
 int getchar(void) {
     char c;
@@ -98,6 +104,7 @@ int getchar(void) {
     return c;
 }
 #endif
+
 
 char* gets2(char *buf, unsigned int len) {
     unsigned char temp;
@@ -146,6 +153,7 @@ char* gets2(char *buf, unsigned int len) {
     return buf;
 }
 
+
 // Waits the provided number of milliseconds by constantly reading the
 // millisecond ticker register.
 int delay(int wait_ms) {
@@ -168,13 +176,16 @@ int delay(int wait_ms) {
     return 0;
 }
 
+
 void display(int value) {
     Disp7 = value;
 }
 
+
 void leds(int value) {
     LEDS = value;
 }
+
 
 void rgb_led(int led, int r, int g, int b) {
     switch(led) {
@@ -201,13 +212,31 @@ void rgb_led(int led, int r, int g, int b) {
     }
 }
 
+
 int get_buttons(void) {
     return BUTTONS;
 }
 
+
 int get_switches(void) {
     return SWITCHES;
 }
+
+
+int isspace(char c) {
+    if(c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v')
+        return 1;
+    return 0;
+}
+
+
+uint8_t chksum8(const uint8_t *buff, int len) {
+    uint32_t sum = 0;
+    for(sum=0; len!=0; len--)
+        sum += *(buff++);
+    return (uint8_t)(sum & 0xff);
+}
+
 
 void dump_hex(const void* data, uint32_t size,
     bool show_addr, uint32_t start_addr) {
@@ -257,6 +286,7 @@ void dump_hex(const void* data, uint32_t size,
     }
 }
 
+
 uint16_t parse_hex_str(uint8_t* hex, uint8_t** ptr) {
     uint16_t ret = 0;
     while (*hex) {
@@ -274,5 +304,22 @@ uint16_t parse_hex_str(uint8_t* hex, uint8_t** ptr) {
 DONE:
     if(ptr != NULL)
         *ptr = hex;
+    return ret;
+}
+
+
+uint16_t parse_int_str(uint8_t* dec, uint8_t** ptr) {
+    uint16_t ret = 0;
+    while (*dec) {
+        int c = *dec;
+        if( !(c >= '0' && c <= '9') )
+            goto DONE;
+        c -= '0';
+        ret = (ret * 10) + c;
+        dec++;
+    }
+DONE:
+    if(ptr != NULL)
+        *ptr = dec;
     return ret;
 }

@@ -185,14 +185,14 @@ class Top(Module):
 
         # ----------------------------------------
         # Serial port
-        self.submodules.uart = Uart(serial, clk_freq_hz=sys_clk_freq_hz, baud_rate=115200)
+        self.submodules.uart = Uart(serial, clk_freq_hz=sys_clk_freq_hz, baud_rate=19200)
 
         # Uart TX/RX FIFOs
-        uart_tx_fifo = AsyncFIFO(8, 16)
+        uart_tx_fifo = AsyncFIFO(8, 64)
         uart_tx_fifo = ClockDomainsRenamer({"read": "sys", "write": "cpu"})(uart_tx_fifo)
         self.submodules.uart_tx_fifo = uart_tx_fifo
 
-        uart_rx_fifo = AsyncFIFO(8, 16)
+        uart_rx_fifo = AsyncFIFO(8, 64)
         uart_rx_fifo = ClockDomainsRenamer({"read": "cpu", "write": "sys"})(uart_rx_fifo)
         self.submodules.uart_rx_fifo = uart_rx_fifo
 

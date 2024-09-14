@@ -109,13 +109,23 @@
 			"path": "src/cpm/bios-f80.asm",
 			"bookmarks": [
 				{
-					"line": 307,
-					"column": 35,
+					"line": 190,
+					"column": 14,
 					"label": ""
 				},
 				{
-					"line": 373,
-					"column": 37,
+					"line": 229,
+					"column": 10,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/cpm/CPM22.asm",
+			"bookmarks": [
+				{
+					"line": 332,
+					"column": 7,
 					"label": ""
 				}
 			]
