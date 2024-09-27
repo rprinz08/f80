@@ -106,51 +106,123 @@ int getchar(void) {
 #endif
 
 
-char* gets2(char *buf, unsigned int len) {
-    unsigned char temp;
-    unsigned char i;
-    bool done;
+int gets2(char *buf, unsigned int len, unsigned int *input_len) {
+    unsigned char temp = 0;
+    unsigned char i = 0;
+    bool done = false;
+    int esc = 0;
+    int rtc = 0;
 
     done = false;
     i = 0;
 
-    // Clear buffer.
-    memset(buf, 0, len);
+    if(buf == NULL)
+        return ERROR_NULL_BUFFER;
+
+    // Show buffer so it can be edited.
+    if(input_len != NULL && *input_len > 0) {
+        int l = (*input_len > len ? len : *input_len);
+        for(int j=0; j<l; j++)
+            putchar(buf[j]);
+        i = l;
+    }
+    else {
+        // Clear buffer.
+        memset(buf, 0, len);
+    }
 
     while(done == false) {
         temp = getchar();
 
-        if(temp == '\b') {
-            if(i != 0) {            // backspace if possible
+        // Handle ESC codes.
+        if(esc != 0) {
+            switch(esc) {
+                case 1:
+                    switch(temp) {
+                        case '[':
+                            esc = 2;
+                            break;
+                        case 27:
+                            rtc = DETECTED_ESC;
+                            done = true;
+                            break;
+                        default:
+                            esc = 0;
+                    }
+                    break;
+                case 2:
+                    switch(temp) {
+                        // Cursor UP.
+                        case 'A':
+                            rtc = DETECTED_CURSOR_UP;
+                            done = true;
+                            break;
+                        // Cursor DOWN.
+                        case 'B':
+                            rtc = DETECTED_CURSOR_DOWN;
+                            done = true;
+                            break;
+                        // Cursor RIGHT.
+                        case 'C':
+                            rtc = DETECTED_CURSOR_RIGHT;
+                            done = true;
+                            break;
+                        // Cursor LEFT.
+                        case 'D':
+                            rtc = DETECTED_CURSOR_LEFT;
+                            done = true;
+                            break;
+                        default:
+                            esc = 0;
+                    }
+                    break;
+                default:
+                    esc = 0;
+            }
+            continue;
+        }
+
+        // Start of ESC sequence.
+        if(temp == 27) {
+            esc = 1;
+            continue;
+        }
+        // Backspace if possible.
+        else if(temp == '\b') {
+            if(i > 0) {
+                buf[i] = '\0';
                 i = i - 1;
                 putchar('\b');
                 putchar(' ');
                 putchar('\b');
             }
         }
-        else
-            if(temp == '\r') {      // handle newline
-                buf[i] = '\0';      // add null terminator to string
+        // Handle newline.
+        else if(temp == '\r' || temp == '\n') {
+                buf[i] = '\0';
                 done = true;
             }
-            else
-                if(temp == '\0') {  // handle EOF
-                    buf[i] = '\0';  // add null terminator to string
-                }
-                else {              // handle new character
-                    buf[i] = temp;
-                    putchar(temp);  // echo character
-                    i = i + 1;
-                    if(i == (len-1)) {
-                        buf[i] = '\0';
-                        done = true;
-                    }
-                }
+        // Handle EOF.
+        else if(temp == '\0') {
+                buf[i] = '\0';
+            }
+        // Aandle all other characters.
+        else {
+            buf[i] = temp;
+            putchar(temp);          // Echo character.
+            i = i + 1;
+            if(i == (len-1)) {
+                buf[i] = '\0';
+                done = true;
+            }
+        }
     }
 
     // Ensure that last byte of buffer is always 0.
     buf[len-1] = 0;
-    return buf;
+    if(input_len != NULL)
+        *input_len = i;
+    return rtc;
 }
 
 

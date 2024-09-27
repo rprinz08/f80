@@ -5,10 +5,6 @@
 #include <string.h>
 #include "runtime.h"
 
-#define CR              "\r"
-#define LF              "\n"
-#define CRLF            CR LF
-
 // Note: Global initialization of C variables not working at the moment.
 // const char* MSG_OK = (CRLF "OK" CRLF);
 // const char* MSG_ERR = "ERR" CRLF;
@@ -334,6 +330,9 @@ int fn_sd_write_block(uint8_t* buffer) {
 
 
 void fn_sd_boot() {
+    // reads first sctor of SD-Card to RAM at addres 0x8000, then, at end of
+    // RAM write code to disable ROM and enable RAM instead of ROM and jump
+    // to address 0x8000 which holds code from SD-Card.
     uint16_t addr = 0x8000;
     uint8_t* ptr = (uint8_t*)addr;
 
@@ -345,11 +344,12 @@ void fn_sd_boot() {
         return;
     }
 
-    // Write change memory to all RAM code to end of RAM and a jump to RAM @ 0x8000
+    // Write change memory "to all RAM" code to end of RAM and a jump to
+    // RAM @ 0x8000
     addr = 0xfff0;
     ptr = (uint8_t*)addr;
     uint8_t code[] = {
-            0xe3, 0x01,         // LD A, #0x01
+            0x3e, 0x01,         // LD A, #0x01
             0xd3, 0x02,         // OUT (0x02), A
             0xc3, 0x00, 0x80    // JP 0x8000
         };
@@ -368,7 +368,12 @@ void fn_sd_boot() {
 
 int main(void) {
     int err = 0;
-    uint8_t buffer[600];
+    uint8_t buffers[CONSOLE_BUFFERS][CONSOLE_LENGHT];
+    int buffer_idx = 0;
+    int input_len = 0;
+    uint8_t* buffer;
+
+    memset(buffers, 0, sizeof(buffers));
 
     // Init SD Card and do a dummy read of block 0.
     fn_sd_init();
@@ -377,14 +382,53 @@ int main(void) {
     show_menu();
 
     while(true) {
+        buffer = buffers[buffer_idx];
+
         if(err < 0)
             printf(MSG_ERR);
         else
             printf(MSG_OK);
+        input_len = 0;
+AGAIN:
+        // printf("buffer(%d), text(%s), len(%d), max_len (%d), ttl(%d)\r\n",
+        //     buffer_idx, buffer, input_len, CONSOLE_LENGHT, sizeof(buffers));
 
-        gets2(buffer, sizeof(buffer));
+        err = gets2(buffer, CONSOLE_LENGHT, &input_len);
+
+        // printf("ret text(%s), len(%d), rtc(%d)\r\n", buffer, input_len, err);
+
+        if(err > 0) {
+            // Select previous or next buffer.
+            if(err == DETECTED_CURSOR_UP) {
+                buffer_idx--;
+                if(buffer_idx < 0)
+                    buffer_idx = CONSOLE_BUFFERS-1;
+            }
+            else if(err == DETECTED_CURSOR_DOWN) {
+                buffer_idx++;
+                if(buffer_idx >= CONSOLE_BUFFERS)
+                    buffer_idx = 0;
+            }
+            buffer = buffers[buffer_idx];
+            input_len = strlen(buffer);
+
+            // Clear old input area.
+            putchar('\r');
+            for(int j=0; j<CONSOLE_LENGHT; j++)
+                putchar(' ');
+            putchar('\r');
+
+            // Read input again.
+            goto AGAIN;
+        }
+
+        // Process input.
         printf(CRLF);
         err = 0;
+
+        buffer_idx++;
+        if(buffer_idx >= CONSOLE_BUFFERS)
+            buffer_idx = 0;
 
         // Strip leading whitespaces.
         char *ptr = skip_whitespace(buffer);

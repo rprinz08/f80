@@ -28,7 +28,7 @@ int main(void) {
         if(c == 'r') {
             while(true) {
                 printf("\r\nEnter block to read: ");
-                gets2(buffer, sizeof(buffer));
+                gets2(buffer, sizeof(buffer), NULL);
                 printf("\r\n");
                 if(buffer[0] == 'q' || buffer[0] == 'Q')
                     break;
@@ -48,7 +48,7 @@ int main(void) {
         if(c == 'w') {
             while(true) {
                 printf("\r\nEnter block to write: ");
-                gets2(buffer, sizeof(buffer));
+                gets2(buffer, sizeof(buffer), NULL);
                 printf("\r\n");
                 if(buffer[0] == 'q' || buffer[0] == 'Q')
                     break;
@@ -63,7 +63,7 @@ int main(void) {
                 buffer[510] = 0x22;
                 buffer[511] = 0xf0;
                 printf("Enter data to write: ");
-                gets2(buffer, sizeof(buffer));
+                gets2(buffer, sizeof(buffer), NULL);
                 printf("\r\n");
 
                 ok = spisdcard_write(buffer, addr, 1);

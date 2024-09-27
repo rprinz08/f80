@@ -9,7 +9,7 @@ int main(void) {
     char buffer[255];
 
     printf("\r\nEnter your name: ");
-    gets2(buffer, sizeof(buffer));
+    gets2(buffer, sizeof(buffer), NULL);
     printf("\n\r\n");
     printf("Hello (%s)\r\n\r\n", buffer);
 

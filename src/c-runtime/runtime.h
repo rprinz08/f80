@@ -40,6 +40,21 @@ __sfr __at 0xAA RGB4_G;
 __sfr __at 0xAB RGB4_B;
 
 
+// Read from console return codes
+#define ERROR_NULL_BUFFER       -1
+#define DETECTED_ESC            1
+#define DETECTED_CURSOR_UP      2
+#define DETECTED_CURSOR_DOWN    3
+#define DETECTED_CURSOR_RIGHT   4
+#define DETECTED_CURSOR_LEFT    5
+#define CONSOLE_BUFFERS         5
+#define CONSOLE_LENGHT          80
+
+#define CR              "\r"
+#define LF              "\n"
+#define CRLF            CR LF
+
+
 // Uncomment to use bios HW access functions.
 #define USE_BIOS_RST_FUNCTIONS
 
@@ -67,7 +82,7 @@ extern bool char_can_be_sent(void);
 extern bool char_available(void);
 extern int putchar(int c);
 extern int getchar(void);
-extern char* gets2(char *buf, unsigned int len);
+extern int gets2(char *buf, unsigned int len, unsigned int *input_len);
 extern int delay(int wait_ms);
 extern void display(int value);
 extern void leds(int value);
