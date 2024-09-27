@@ -24,6 +24,7 @@ def upload(args):
     toolbar_clear = " " * toolbar_width
     w = data_len // toolbar_width
     print("\n\nUpload ({}{}{})".format(Fore.CYAN, args.binary.name, Fore.RESET))
+    print("to memory location ({}0x{:04X}{})".format(Fore.CYAN, args.addr, Fore.RESET))
     sys.stdout.write("[%s] %d bytes" % (" " * (toolbar_width+1), data_len))
     sys.stdout.write("\r[")
     sys.stdout.flush()
