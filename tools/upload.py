@@ -7,31 +7,35 @@ import time
 from colorama import init as color_init, Fore
 color_init()
 
+MAX_BLOCK_RETRIES = 5
+
 # This utility uploads compiled binaries to Arty-80 using the monitor program
 # running on it.
+
+VERBOSE = False
 
 def upload(args):
     addr = args.addr
     data = args.binary.read()
     data_len = len(data)
-    data_remaining = 0
-    block_size = 16
+    data_remaining = data_len
+    block_size = 16 if data_len > 16 else data_len
     block_addr = 0
-    block_retries = 5
+    block_retries = MAX_BLOCK_RETRIES
 
     # Setup progress bar.
-    toolbar_width = 40
-    toolbar_clear = " " * toolbar_width
-    w = data_len // toolbar_width
+    progressbar_width = 40
+    progressbar_clear = " " * progressbar_width
+    w = data_len // progressbar_width
     print("\n\nUpload ({}{}{})".format(Fore.CYAN, args.binary.name, Fore.RESET))
     print("to memory location ({}0x{:04X}{})".format(Fore.CYAN, args.addr, Fore.RESET))
-    sys.stdout.write("[%s] %d bytes" % (" " * (toolbar_width+1), data_len))
-    sys.stdout.write("\r[")
-    sys.stdout.flush()
+    if not VERBOSE:
+        sys.stdout.write("[%s] %d bytes" % (" " * (progressbar_width+1), data_len))
+        sys.stdout.write("\r[")
+        sys.stdout.flush()
 
     data_idx = 0
     addr_offset = 0
-    data_remaining = data_len
     block_addr = addr
 
     while(data_remaining > 0 and block_retries > 0):
@@ -51,17 +55,17 @@ def upload(args):
                 if (data_remaining - addr_offset) < 1:
                     break
 
-                if block_retries == 5:
-                    if((data_idx+i) % w) == 0:
-                        sys.stdout.write("#")
-                        sys.stdout.flush()
-
-            data_remaining -= addr_offset
+                if not VERBOSE:
+                    if block_retries == MAX_BLOCK_RETRIES:
+                        if w > 0:
+                            if((data_idx+i) % w) == 0:
+                                sys.stdout.write("#")
+                                sys.stdout.flush()
 
             cs = cs & 0xff
 
-            # print(cmd)
-            # print(f"CS: {cs:02x}")
+            if VERBOSE:
+                print(f"CMD: {cmd} = CS: {cs:02X}")
 
             cmd += "\x0d"
             cmd_bytes = bytes(cmd, encoding="utf8")
@@ -78,7 +82,7 @@ def upload(args):
             # print("\nline done")
 
             # Try to read back checksum for sent data block.
-            read_retries = 5
+            read_retries = MAX_BLOCK_RETRIES
             l = ""
             while not l.startswith("CS: ") and read_retries > 0:
                 #print(args.serial.in_waiting)
@@ -90,7 +94,7 @@ def upload(args):
 
             if read_retries < 1:
                 sys.stdout.write(f"\r{Fore.RED}Error: Unable to read from target{Fore.RESET}" +
-                                 toolbar_clear + "\n\n")
+                                 progressbar_clear + "\n\n")
                 return
 
             if l.startswith("CS: "):
@@ -98,7 +102,7 @@ def upload(args):
                 if len(la) < 2:
                     sys.stdout.write(f"\r{Fore.RED}Error: Unable to read checksum "
                                      f"from target{Fore.RESET}" +
-                                     toolbar_clear + "\n\n")
+                                     progressbar_clear + "\n\n")
                     return
                 try:
                     rx_cs = int(la[1], 16)
@@ -106,12 +110,14 @@ def upload(args):
                 except Exception as ex:
                     sys.stdout.write(f"\r{Fore.RED}Error: Unable to read valid checksum " +
                                      f"({la[1]}) from target; {ex}{Fore.RESET}" +
-                                     toolbar_clear + "\n\n")
+                                     progressbar_clear + "\n\n")
                     return
 
                 # Check CS, if wrong repeat last block.
                 if cs == rx_cs:
                     block_valid = True
+                    block_retries = MAX_BLOCK_RETRIES
+                    data_remaining -= addr_offset
                 else:
                     block_valid = False
                     block_retries -= 1
@@ -119,14 +125,18 @@ def upload(args):
                         sys.stdout.write(f"\r{Fore.RED}Error: Checksum missmatch " +
                                          f"expected({cs:02X}), got({rx_cs:02X}), " +
                                          f"max retries reached; abort{Fore.RESET}" +
-                                         toolbar_clear + "\n\n")
+                                         progressbar_clear + "\n\n")
                         return
 
                     sys.stdout.write(f"\r{Fore.RED}Error: Checksum missmatch " +
                                      f"expected({cs:02X}), got({rx_cs:02X}), " +
-                                     f"retry block addr({block_addr:04X}){Fore.RESET}" +
-                                     toolbar_clear + "\n\n")
+                                     f"retry block addr({block_addr:04X}), "+
+                                     f"retry({MAX_BLOCK_RETRIES-block_retries}){Fore.RESET}" +
+                                     progressbar_clear + "\n\n")
 
+    if VERBOSE:
+        if w < 1:
+            sys.stdout.write("#" * (progressbar_width+1))
     sys.stdout.write("\r\n\n")
 
 
